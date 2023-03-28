@@ -449,10 +449,10 @@
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	'use strict';
+	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
-	    value: true
+	  value: true
 	});
 	exports.Frame = exports.APNG = undefined;
 
@@ -473,122 +473,121 @@
 	 * @property {boolean} ended
 	 */
 	var APNG = exports.APNG = function () {
-	    function APNG() {
-	        _classCallCheck(this, APNG);
+	  function APNG() {
+	    _classCallCheck(this, APNG);
 
-	        this.width = 0;
-	        this.height = 0;
-	        this.numPlays = 0;
-	        this.playTime = 0;
-	        this.frames = [];
+	    this.width = 0;
+	    this.height = 0;
+	    this.numPlays = 0;
+	    this.playTime = 0;
+	    this.frames = [];
+	  }
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {Frame[]} */
+
+
+	  _createClass(APNG, [{
+	    key: "createImages",
+
+
+	    /**
+	     *
+	     * @return {Promise.<*>}
+	     */
+	    value: function createImages(canvas) {
+	      return Promise.all(this.frames.map(function (f) {
+	        return f.createImage(canvas);
+	      }));
 	    }
-	    /** @type {number} */
 
-	    /** @type {number} */
+	    /**
+	     *
+	     * @param {CanvasRenderingContext2D} context
+	     * @param {boolean} autoPlay
+	     * @return {Promise.<Player>}
+	     */
 
-	    /** @type {number} */
+	  }, {
+	    key: "getPlayer",
+	    value: function getPlayer(canvas) {
+	      var _this = this;
 
-	    /** @type {number} */
+	      var autoPlay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-	    /** @type {Frame[]} */
+	      return this.createImages(canvas).then(function () {
+	        var ctx = canvas.getContext("2d");
+	        return new _player2.default(_this, ctx, autoPlay);
+	      });
+	    }
+	  }]);
 
-
-	    _createClass(APNG, [{
-	        key: 'createImages',
-
-
-	        /**
-	         *
-	         * @return {Promise.<*>}
-	         */
-	        value: function createImages() {
-	            return Promise.all(this.frames.map(function (f) {
-	                return f.createImage();
-	            }));
-	        }
-
-	        /**
-	         *
-	         * @param {CanvasRenderingContext2D} context
-	         * @param {boolean} autoPlay
-	         * @return {Promise.<Player>}
-	         */
-
-	    }, {
-	        key: 'getPlayer',
-	        value: function getPlayer(context) {
-	            var _this = this;
-
-	            var autoPlay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
-	            return this.createImages().then(function () {
-	                return new _player2.default(_this, context, autoPlay);
-	            });
-	        }
-	    }]);
-
-	    return APNG;
+	  return APNG;
 	}();
 
 	var Frame = exports.Frame = function () {
-	    function Frame() {
-	        _classCallCheck(this, Frame);
+	  function Frame() {
+	    _classCallCheck(this, Frame);
 
-	        this.left = 0;
-	        this.top = 0;
-	        this.width = 0;
-	        this.height = 0;
-	        this.delay = 0;
-	        this.disposeOp = 0;
-	        this.blendOp = 0;
-	        this.imageData = null;
-	        this.imageElement = null;
+	    this.left = 0;
+	    this.top = 0;
+	    this.width = 0;
+	    this.height = 0;
+	    this.delay = 0;
+	    this.disposeOp = 0;
+	    this.blendOp = 0;
+	    this.imageData = null;
+	    this.imageElement1 = null;
+	  }
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {number} */
+
+	  /** @type {Blob} */
+
+
+	  _createClass(Frame, [{
+	    key: "createImage",
+	    value: function createImage(canvas) {
+	      var _this2 = this;
+
+	      if (this.imageElement1) {
+	        return Promise.resolve();
+	      }
+	      return new Promise(function (resolve, reject) {
+	        var url = URL.createObjectURL(_this2.imageData);
+	        _this2.imageElement1 = canvas.createImage();
+	        _this2.imageElement1.onload = function () {
+	          // URL.revokeObjectURL(url);
+	          resolve();
+	        };
+	        _this2.imageElement1.onerror = function () {
+	          URL.revokeObjectURL(url);
+	          _this2.imageElement = null;
+	          reject(new Error("Image creation error"));
+	        };
+	        _this2.imageElement1.src = url;
+	      });
 	    }
-	    /** @type {number} */
+	  }]);
 
-	    /** @type {number} */
-
-	    /** @type {number} */
-
-	    /** @type {number} */
-
-	    /** @type {number} */
-
-	    /** @type {number} */
-
-	    /** @type {number} */
-
-	    /** @type {Blob} */
-
-	    /** @type {HTMLImageElement} */
-
-
-	    _createClass(Frame, [{
-	        key: 'createImage',
-	        value: function createImage() {
-	            var _this2 = this;
-
-	            if (this.imageElement) {
-	                return Promise.resolve();
-	            }
-	            return new Promise(function (resolve, reject) {
-	                var url = URL.createObjectURL(_this2.imageData);
-	                _this2.imageElement = document.createElement('img');
-	                _this2.imageElement.onload = function () {
-	                    URL.revokeObjectURL(url);
-	                    resolve();
-	                };
-	                _this2.imageElement.onerror = function () {
-	                    URL.revokeObjectURL(url);
-	                    _this2.imageElement = null;
-	                    reject(new Error("Image creation error"));
-	                };
-	                _this2.imageElement.src = url;
-	            });
-	        }
-	    }]);
-
-	    return Frame;
+	  return Frame;
 	}();
 
 /***/ }),
@@ -697,7 +696,7 @@
 	                this.context.clearRect(frame.left, frame.top, frame.width, frame.height);
 	            }
 
-	            this.context.drawImage(frame.imageElement, frame.left, frame.top);
+	            this.context.drawImage(frame.imageElement1, frame.left, frame.top);
 
 	            this.emit('frame', this._currentFrameNumber);
 	            if (this._ended) {

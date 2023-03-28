@@ -79,7 +79,7 @@ export default class extends EventEmitter {
             this.context.clearRect(frame.left, frame.top, frame.width, frame.height);
         }
 
-        this.context.drawImage(frame.imageElement, frame.left, frame.top);
+        this.context.drawImage(frame.imageElement1, frame.left, frame.top);
 
         this.emit('frame', this._currentFrameNumber);
         if (this._ended) {
