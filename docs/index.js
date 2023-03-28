@@ -197,6 +197,8 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 	var errNotPNG = new Error('Not a PNG');
 	var errNotAPNG = new Error('Not an animated PNG');
 
@@ -307,21 +309,34 @@
 	        return errNotAPNG;
 	    }
 
-	    var preBlob = new Blob(preDataParts),
-	        postBlob = new Blob(postDataParts);
+	    var preBlob = preDataParts,
+	        postBlob = postDataParts;
 
 	    apng.frames.forEach(function (frame) {
+	        var _bb, _bb2;
+
 	        var bb = [];
-	        bb.push(PNGSignature);
+	        (_bb = bb).push.apply(_bb, _toConsumableArray(PNGSignature));
 	        headerDataBytes.set(makeDWordArray(frame.width), 0);
 	        headerDataBytes.set(makeDWordArray(frame.height), 4);
-	        bb.push(makeChunkBytes('IHDR', headerDataBytes));
-	        bb.push(preBlob);
+	        (_bb2 = bb).push.apply(_bb2, _toConsumableArray(makeChunkBytes('IHDR', headerDataBytes)));
+	        for (var i = 0; i < preBlob.length; i++) {
+	            var _bb3;
+
+	            (_bb3 = bb).push.apply(_bb3, _toConsumableArray(preBlob[i]));
+	        }
+
 	        frame.dataParts.forEach(function (p) {
-	            return bb.push(makeChunkBytes('IDAT', p));
+	            var _bb4;
+
+	            return (_bb4 = bb).push.apply(_bb4, _toConsumableArray(makeChunkBytes('IDAT', p)));
 	        });
-	        bb.push(postBlob);
-	        frame.imageData = new Blob(bb, { 'type': 'image/png' });
+	        for (var _i = 0; _i < postBlob.length; _i++) {
+	            var _bb5;
+
+	            (_bb5 = bb).push.apply(_bb5, _toConsumableArray(postBlob[_i]));
+	        }
+	        frame.imageData = tt.arrayBufferToBase64(bb);
 	        delete frame.dataParts;
 	        bb = null;
 	    });
@@ -522,8 +537,7 @@
 	      var autoPlay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
 	      return this.createImages(canvas).then(function () {
-	        var ctx = canvas.getContext("2d");
-	        return new _player2.default(_this, ctx, autoPlay);
+	        return new _player2.default(_this, canvas, autoPlay);
 	      });
 	    }
 	  }]);
@@ -543,7 +557,7 @@
 	    this.disposeOp = 0;
 	    this.blendOp = 0;
 	    this.imageData = null;
-	    this.imageElement1 = null;
+	    this.imageEle = null;
 	  }
 	  /** @type {number} */
 
@@ -567,22 +581,19 @@
 	    value: function createImage(canvas) {
 	      var _this2 = this;
 
-	      if (this.imageElement1) {
+	      if (this.imageElement) {
 	        return Promise.resolve();
 	      }
 	      return new Promise(function (resolve, reject) {
-	        var url = URL.createObjectURL(_this2.imageData);
-	        _this2.imageElement1 = canvas.createImage();
-	        _this2.imageElement1.onload = function () {
-	          // URL.revokeObjectURL(url);
+	        _this2.imageElement = canvas.createImage();
+	        _this2.imageElement.onload = function () {
 	          resolve();
 	        };
-	        _this2.imageElement1.onerror = function () {
-	          URL.revokeObjectURL(url);
+	        _this2.imageElement.onerror = function () {
 	          _this2.imageElement = null;
 	          reject(new Error("Image creation error"));
 	        };
-	        _this2.imageElement1.src = url;
+	        _this2.imageElement.src = 'data:image/png;base64,' + _this2.imageData;
 	      });
 	    }
 	  }]);
@@ -630,7 +641,7 @@
 	    /** @type {Frame} */
 
 	    /** @type {number} */
-	    function _class(apng, context, autoPlay) {
+	    function _class(apng, canvas, autoPlay) {
 	        _classCallCheck(this, _class);
 
 	        var _this = _possibleConstructorReturn(this, (_class.__proto__ || Object.getPrototypeOf(_class)).call(this));
@@ -642,7 +653,8 @@
 	        _this._numPlays = 0;
 
 	        _this._apng = apng;
-	        _this.context = context;
+	        _this.canvas = canvas;
+	        _this.context = canvas.getContext('2d');
 	        _this.stop();
 	        if (autoPlay) {
 	            _this.play();
@@ -696,7 +708,7 @@
 	                this.context.clearRect(frame.left, frame.top, frame.width, frame.height);
 	            }
 
-	            this.context.drawImage(frame.imageElement1, frame.left, frame.top);
+	            this.context.drawImage(frame.imageElement, frame.left, frame.top);
 
 	            this.emit('frame', this._currentFrameNumber);
 	            if (this._ended) {
@@ -733,9 +745,9 @@
 	                        nextRenderTime += _this2.currentFrame.delay / _this2.playbackRate;
 	                    } while (!_this2._ended && now > nextRenderTime);
 	                }
-	                requestAnimationFrame(tick);
+	                _this2.canvas.requestAnimationFrame(tick);
 	            };
-	            requestAnimationFrame(tick);
+	            this.canvas.requestAnimationFrame(tick);
 	        }
 	    }, {
 	        key: 'pause',
@@ -1133,7 +1145,7 @@
 
 
 	// module
-	exports.push([module.id, ".apng-info,\r\n.apng-frames {\r\n    max-height: 600px;\r\n    overflow:   auto;\r\n}\r\n\r\n.apng-frames > div {\r\n    float:            left;\r\n    margin:           1px 1px 8px 8px;\r\n    box-shadow:       0 0 0 1px;\r\n    position:         relative;\r\n    background:       linear-gradient(45deg, #fff 25%, transparent 26%, transparent 75%, #fff 76%),\r\n                      linear-gradient(-45deg, #fff 25%, transparent 26%, transparent 75%, #fff 76%);\r\n    background-color: #eee;\r\n    background-size:  20px 20px;\r\n}\r\n\r\n.apng-frames > div > img {\r\n    position:   absolute;\r\n    box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.75);\r\n}\r\n\r\n#playback-rate {\r\n    width:   12em;\r\n    display: inline-block;\r\n}\r\n\r\n.apng-log {\r\n    height: 10em;\r\n}", ""]);
+	exports.push([module.id, ".apng-info,\n.apng-frames {\n    max-height: 600px;\n    overflow:   auto;\n}\n\n.apng-frames > div {\n    float:            left;\n    margin:           1px 1px 8px 8px;\n    box-shadow:       0 0 0 1px;\n    position:         relative;\n    background:       linear-gradient(45deg, #fff 25%, transparent 26%, transparent 75%, #fff 76%),\n                      linear-gradient(-45deg, #fff 25%, transparent 26%, transparent 75%, #fff 76%);\n    background-color: #eee;\n    background-size:  20px 20px;\n}\n\n.apng-frames > div > img {\n    position:   absolute;\n    box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.75);\n}\n\n#playback-rate {\n    width:   12em;\n    display: inline-block;\n}\n\n.apng-log {\n    height: 10em;\n}", ""]);
 
 	// exports
 

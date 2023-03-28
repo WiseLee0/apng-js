@@ -27,10 +27,11 @@ export default class extends EventEmitter {
      * @param {CanvasRenderingContext2D} context
      * @param {boolean} autoPlay
      */
-    constructor(apng, context, autoPlay) {
+    constructor(apng, canvas, autoPlay) {
         super();
         this._apng = apng;
-        this.context = context;
+        this.canvas = canvas
+        this.context = canvas.getContext('2d');
         this.stop();
         if (autoPlay) {
             this.play();
@@ -79,7 +80,7 @@ export default class extends EventEmitter {
             this.context.clearRect(frame.left, frame.top, frame.width, frame.height);
         }
 
-        this.context.drawImage(frame.imageElement1, frame.left, frame.top);
+        this.context.drawImage(frame.imageElement, frame.left, frame.top);
 
         this.emit('frame', this._currentFrameNumber);
         if (this._ended) {
@@ -116,9 +117,9 @@ export default class extends EventEmitter {
                     nextRenderTime += this.currentFrame.delay / this.playbackRate;
                 } while (!this._ended && now > nextRenderTime);
             }
-            requestAnimationFrame(tick);
+            this.canvas.requestAnimationFrame(tick);
         };
-        requestAnimationFrame(tick);
+        this.canvas.requestAnimationFrame(tick);
     }
 
     pause() {

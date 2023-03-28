@@ -1,5 +1,5 @@
 import crc32 from './crc32';
-import {APNG, Frame} from './structs';
+import { APNG, Frame } from './structs';
 
 const errNotPNG = new Error('Not a PNG');
 const errNotAPNG = new Error('Not an animated PNG');
@@ -105,19 +105,24 @@ export default function parseAPNG(buffer) {
         return errNotAPNG;
     }
 
-    const preBlob = new Blob(preDataParts),
-        postBlob = new Blob(postDataParts);
+    const preBlob = preDataParts,
+        postBlob = postDataParts;
 
     apng.frames.forEach(frame => {
         var bb = [];
-        bb.push(PNGSignature);
+        bb.push(...PNGSignature);
         headerDataBytes.set(makeDWordArray(frame.width), 0);
         headerDataBytes.set(makeDWordArray(frame.height), 4);
-        bb.push(makeChunkBytes('IHDR', headerDataBytes));
-        bb.push(preBlob);
-        frame.dataParts.forEach(p => bb.push(makeChunkBytes('IDAT', p)));
-        bb.push(postBlob);
-        frame.imageData = new Blob(bb, {'type': 'image/png'});
+        bb.push(...makeChunkBytes('IHDR', headerDataBytes));
+        for (let i = 0; i < preBlob.length; i++) {
+            bb.push(...preBlob[i]);
+        }
+
+        frame.dataParts.forEach(p => bb.push(...makeChunkBytes('IDAT', p)));
+        for (let i = 0; i < postBlob.length; i++) {
+            bb.push(...postBlob[i]);
+        }
+        frame.imageData = tt.arrayBufferToBase64(bb);
         delete frame.dataParts;
         bb = null;
     });

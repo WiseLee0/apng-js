@@ -33,10 +33,8 @@ export class APNG {
    * @return {Promise.<Player>}
    */
   getPlayer(canvas, autoPlay = false) {
-    return this.createImages(canvas).then(() => {
-      const ctx = canvas.getContext("2d");
-      return new Player(this, ctx, autoPlay);
-    });
+    return this.createImages(canvas).then(() => new Player(this, canvas, autoPlay)
+    );
   }
 }
 
@@ -57,25 +55,22 @@ export class Frame {
   blendOp = 0;
   /** @type {Blob} */
   imageData = null;
-  imageElement1 = null;
+  imageEle = null;
 
   createImage(canvas) {
-    if (this.imageElement1) {
+    if (this.imageElement) {
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(this.imageData);
-      this.imageElement1 = canvas.createImage();
-      this.imageElement1.onload = () => {
-        // URL.revokeObjectURL(url);
+      this.imageElement = canvas.createImage();
+      this.imageElement.onload = () => {
         resolve();
       };
-      this.imageElement1.onerror = () => {
-        URL.revokeObjectURL(url);
+      this.imageElement.onerror = () => {
         this.imageElement = null;
         reject(new Error("Image creation error"));
       };
-      this.imageElement1.src = url;
+      this.imageElement.src = 'data:image/png;base64,' + this.imageData;
     });
   }
 }
