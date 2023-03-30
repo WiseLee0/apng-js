@@ -17,6 +17,29 @@ export class APNG {
   playTime = 0;
   /** @type {Frame[]} */
   frames = [];
+  // 开始帧
+  startFrame = -1;
+  // 结束帧
+  endFrame = -1;
+
+
+  /**
+   * 
+   * @param {number} startFrame 
+   * @param {number} endFrame 
+   */
+  applyRange(startFrame, endFrame) {
+    this.startFrame = startFrame;
+    this.endFrame = endFrame;
+  }
+
+  // 重置动画运行范围
+  resetRange() {
+    this.startFrame = 0
+    this.endFrame = this.frames.length - 1;
+  }
+
+
 
   /**
    *

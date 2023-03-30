@@ -496,6 +496,8 @@
 	    this.numPlays = 0;
 	    this.playTime = 0;
 	    this.frames = [];
+	    this.startFrame = -1;
+	    this.endFrame = -1;
 	  }
 	  /** @type {number} */
 
@@ -507,15 +509,41 @@
 
 	  /** @type {Frame[]} */
 
+	  // 开始帧
+
+	  // 结束帧
+
 
 	  _createClass(APNG, [{
-	    key: "createImages",
+	    key: "applyRange",
 
+
+	    /**
+	     * 
+	     * @param {number} startFrame 
+	     * @param {number} endFrame 
+	     */
+	    value: function applyRange(startFrame, endFrame) {
+	      this.startFrame = startFrame;
+	      this.endFrame = endFrame;
+	    }
+
+	    // 重置动画运行范围
+
+	  }, {
+	    key: "resetRange",
+	    value: function resetRange() {
+	      this.startFrame = 0;
+	      this.endFrame = this.frames.length - 1;
+	    }
 
 	    /**
 	     *
 	     * @return {Promise.<*>}
 	     */
+
+	  }, {
+	    key: "createImages",
 	    value: function createImages(canvas) {
 	      return Promise.all(this.frames.map(function (f) {
 	        return f.createImage(canvas);
@@ -611,6 +639,8 @@
 	    value: true
 	});
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _events = __webpack_require__(5);
@@ -630,7 +660,7 @@
 
 	    /**
 	     * @param {APNG} apng
-	     * @param {CanvasRenderingContext2D} context
+	     * @param {HTMLCanvasElement} canvas
 	     * @param {boolean} autoPlay
 	     */
 
@@ -655,6 +685,10 @@
 	        _this._apng = apng;
 	        _this.canvas = canvas;
 	        _this.context = canvas.getContext('2d');
+	        if (_this._apng.startFrame === -1) {
+	            _this._apng.resetRange();
+	        }
+	        _this._currentFrameNumber = _this.rangeFrameArr[0];
 	        _this.stop();
 	        if (autoPlay) {
 	            _this.play();
@@ -683,8 +717,13 @@
 	    _createClass(_class, [{
 	        key: 'renderNextFrame',
 	        value: function renderNextFrame() {
-	            this._currentFrameNumber = (this._currentFrameNumber + 1) % this._apng.frames.length;
-	            if (this._currentFrameNumber === this._apng.frames.length - 1) {
+	            var _rangeFrameArr = _slicedToArray(this.rangeFrameArr, 2),
+	                startFrame = _rangeFrameArr[0],
+	                endFrame = _rangeFrameArr[1];
+
+	            var curFrameNumber = startFrame + (this._currentFrameNumber - startFrame) % (endFrame - startFrame + 1);
+	            this._currentFrameNumber = curFrameNumber + 1;
+	            if (this._currentFrameNumber === endFrame) {
 	                this._numPlays++;
 	                if (this._apng.numPlays !== 0 && this._numPlays >= this._apng.numPlays) {
 	                    this._ended = true;
@@ -707,7 +746,6 @@
 	            if (frame.blendOp == 0) {
 	                this.context.clearRect(frame.left, frame.top, frame.width, frame.height);
 	            }
-
 	            this.context.drawImage(frame.imageElement, frame.left, frame.top);
 
 	            this.emit('frame', this._currentFrameNumber);
@@ -731,7 +769,8 @@
 	            this._paused = false;
 
 	            var nextRenderTime = performance.now() + this.currentFrame.delay / this.playbackRate;
-	            var tick = function tick(now) {
+	            var tick = function tick() {
+	                var now = performance.now();
 	                if (_this2._ended || _this2._paused) {
 	                    return;
 	                }
@@ -765,7 +804,7 @@
 	            this._ended = false;
 	            this._paused = true;
 	            // render first frame
-	            this._currentFrameNumber = -1;
+	            this._currentFrameNumber = this.rangeFrameArr[0] - 1;
 	            this.context.clearRect(0, 0, this._apng.width, this._apng.height);
 	            this.renderNextFrame();
 	        }
@@ -783,7 +822,22 @@
 	    }, {
 	        key: 'currentFrame',
 	        get: function get() {
+	            var _apng = this._apng,
+	                startFrame = _apng.startFrame,
+	                endFrame = _apng.endFrame;
+
+	            if (startFrame > endFrame) {
+	                var num = startFrame - this._currentFrameNumber + endFrame;
+	                return this._apng.frames[num];
+	            }
 	            return this._apng.frames[this._currentFrameNumber];
+	        }
+	    }, {
+	        key: 'rangeFrameArr',
+	        get: function get() {
+	            return [this._apng.startFrame, this._apng.endFrame].sort(function (a, b) {
+	                return a - b;
+	            });
 	        }
 	    }, {
 	        key: 'paused',

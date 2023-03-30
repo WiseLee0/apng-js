@@ -24,7 +24,7 @@ export default class extends EventEmitter {
 
     /**
      * @param {APNG} apng
-     * @param {CanvasRenderingContext2D} context
+     * @param {HTMLCanvasElement} canvas
      * @param {boolean} autoPlay
      */
     constructor(apng, canvas, autoPlay) {
@@ -32,11 +32,17 @@ export default class extends EventEmitter {
         this._apng = apng;
         this.canvas = canvas
         this.context = canvas.getContext('2d');
+        if (this._apng.startFrame === -1) {
+            this._apng.resetRange();
+        }
+        this._currentFrameNumber = this.rangeFrameArr[0]
         this.stop();
         if (autoPlay) {
             this.play();
         }
     }
+
+
 
     /**
      *
@@ -51,12 +57,23 @@ export default class extends EventEmitter {
      * @return {Frame}
      */
     get currentFrame() {
+        const { startFrame, endFrame } = this._apng
+        if (startFrame > endFrame) {
+            const num = startFrame - this._currentFrameNumber + endFrame
+            return this._apng.frames[num];
+        }
         return this._apng.frames[this._currentFrameNumber];
     }
 
+    get rangeFrameArr() {
+        return [this._apng.startFrame, this._apng.endFrame].sort((a, b) => a - b)
+    }
+
     renderNextFrame() {
-        this._currentFrameNumber = (this._currentFrameNumber + 1) % this._apng.frames.length;
-        if (this._currentFrameNumber === this._apng.frames.length - 1) {
+        const [startFrame, endFrame] = this.rangeFrameArr
+        const curFrameNumber = startFrame + (this._currentFrameNumber - startFrame) % (endFrame - startFrame + 1);
+        this._currentFrameNumber = curFrameNumber + 1
+        if (this._currentFrameNumber === endFrame) {
             this._numPlays++;
             if (this._apng.numPlays !== 0 && this._numPlays >= this._apng.numPlays) {
                 this._ended = true;
@@ -79,7 +96,6 @@ export default class extends EventEmitter {
         if (frame.blendOp == 0) {
             this.context.clearRect(frame.left, frame.top, frame.width, frame.height);
         }
-
         this.context.drawImage(frame.imageElement, frame.left, frame.top);
 
         this.emit('frame', this._currentFrameNumber);
@@ -103,7 +119,8 @@ export default class extends EventEmitter {
         this._paused = false;
 
         let nextRenderTime = performance.now() + this.currentFrame.delay / this.playbackRate;
-        const tick = now => {
+        const tick = () => {
+            const now = performance.now()
             if (this._ended || this._paused) {
                 return;
             }
@@ -135,7 +152,7 @@ export default class extends EventEmitter {
         this._ended = false;
         this._paused = true;
         // render first frame
-        this._currentFrameNumber = -1;
+        this._currentFrameNumber = this.rangeFrameArr[0] - 1;
         this.context.clearRect(0, 0, this._apng.width, this._apng.height);
         this.renderNextFrame();
     }
